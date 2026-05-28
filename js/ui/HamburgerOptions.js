@@ -115,6 +115,7 @@ export class HamburgerOptions {
 			{
 				id: 'constructor-project-reopen-output-log',
 				label: 'Reopen Output Log',
+				icon: path.join(iconsPath, 'reopen-output-log.png'),
 				accelerator: DEFAULT_BINDS.reopenOutputLog,
 				click: commands.reopenLastOutputLog,
 				enabled: false
