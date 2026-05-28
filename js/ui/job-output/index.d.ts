@@ -20,7 +20,7 @@ export declare global {
 			connect(client: OutputLogDisplay.Client);
 
 			/**
-			 * Disconnect the current client, if any.
+			 * Disconnect the current client from this display, if any.
 			 */
 			disconnect();
 

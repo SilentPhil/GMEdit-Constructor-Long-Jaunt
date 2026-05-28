@@ -11,6 +11,7 @@ const DEFAULT_BINDS = {
 	package: 'Ctrl+F5',
 	stop: 'F6',
 	clean: 'Ctrl+F7',
+	reopenOutputLog: 'Ctrl+Shift+F6',
 	run: 'F5'
 };
 
@@ -65,6 +66,12 @@ export class HamburgerOptions {
 				exec: commands.stopCurrentProject
 			},
 			{
+				name: 'constructor-reopen-output-log',
+				title: 'Constructor - Reopen Output Log',
+				bindKey: { win: DEFAULT_BINDS.reopenOutputLog, mac: DEFAULT_BINDS.reopenOutputLog },
+				exec: commands.reopenLastOutputLog
+			},
+			{
 				name: 'constructor-run',
 				title: 'Constructor - Run',
 				bindKey: { win: DEFAULT_BINDS.run, mac: DEFAULT_BINDS.run },
@@ -103,6 +110,13 @@ export class HamburgerOptions {
 				icon: path.join(iconsPath, 'stop.png'),
 				accelerator: DEFAULT_BINDS.stop,
 				click: commands.stopCurrentProject,
+				enabled: false
+			},
+			{
+				id: 'constructor-project-reopen-output-log',
+				label: 'Reopen Output Log',
+				accelerator: DEFAULT_BINDS.reopenOutputLog,
+				click: commands.reopenLastOutputLog,
 				enabled: false
 			},
 			{

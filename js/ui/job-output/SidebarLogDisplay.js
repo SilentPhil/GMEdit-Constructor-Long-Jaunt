@@ -30,6 +30,7 @@ export class SidebarLogDisplay {
 
 	destroy() {
 		this.client?.displayClosed();
+		this.disconnect();
 
 		GMEdit.sidebar.remove(OUTPUT_TAB_NAME);
 		GMEdit.sidebar.remove(ERRORS_TAB_NAME);
@@ -68,7 +69,6 @@ export class SidebarLogDisplay {
 			this.errorsTabElement.textContent = '';
 		}
 
-		this.client.displayClosed();
 		this.client = undefined;
 	}
 

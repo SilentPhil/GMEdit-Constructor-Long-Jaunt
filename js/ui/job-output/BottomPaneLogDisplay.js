@@ -47,11 +47,8 @@ export class BottomPaneLogDisplay {
 
 	destroy() {
 		this.client?.displayClosed();
+		this.disconnect();
 		this.bottomPane.closeTab(this.logTab);
-
-		if (this.errorsTab !== undefined) {
-			this.bottomPane.closeTab(this.errorsTab);
-		}
 	}
 
 	/**
@@ -85,9 +82,9 @@ export class BottomPaneLogDisplay {
 
 		if (this.errorsTab !== undefined) {
 			this.bottomPane.closeTab(this.errorsTab);
+			this.errorsTab = undefined;
 		}
 
-		this.client.displayClosed();
 		this.client = undefined;
 	}
 

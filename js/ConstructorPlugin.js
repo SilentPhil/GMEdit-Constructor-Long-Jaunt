@@ -140,6 +140,7 @@ export class ConstructorPlugin {
 			showControlPanel: this.showControlPanel,
 			stopCurrentProject: this.stopCurrent,
 			runCurrentProject: this.runCurrent,
+			reopenLastOutputLog: this.reopenLastOutputLog,
 			cleanCurrentProject: this.cleanCurrent,
 			packageCurrentProject: this.packageCurrent
 		}, pluginPath);
@@ -545,6 +546,9 @@ export class ConstructorPlugin {
 		/** @type {UI.OutputLogDisplay|undefined} */
 		let display = undefined;
 
+		/** @type {JobOutputLog|undefined} */
+		let outputToReuse = undefined;
+
 		/** @type {number|undefined} */
 		let jobIdToReuse = undefined;
 
@@ -552,6 +556,7 @@ export class ConstructorPlugin {
 			const idleOutput = JobOutputLog.findIdle();
 			
 			if (idleOutput !== undefined) {
+				outputToReuse = idleOutput;
 				jobIdToReuse = idleOutput.job.id;
 				display = idleOutput.display;
 			}
@@ -579,26 +584,35 @@ export class ConstructorPlugin {
 		}
 
 		if (display === undefined) {
-			switch (this.preferences.outputPosition) {
-				case 'fullTab':
-					display = OutputLogTab.create();
-				break;
-
-				case 'bottomPane':
-					display = new BottomPaneLogDisplay(this.bottomPane);
-				break;
-
-				case 'rightPane':
-					components.sidebarLogDisplay ??= new SidebarLogDisplay();
-					display = components.sidebarLogDisplay;
-				break;
-			}
+			display = this.createOutputDisplay(components);
 		}
 
+		outputToReuse?.destroy(false);
 		JobOutputLog.create(job.data, display);
 
 		if (this.preferences.shouldFocusOutput) {
 			display.bringToForeground();
+		}
+	}
+
+	/**
+	 * Create a new output display using the current output position preference.
+	 *
+	 * @private
+	 * @param {ProjectComponents} components
+	 * @returns {UI.OutputLogDisplay}
+	 */
+	createOutputDisplay(components) {
+		switch (this.preferences.outputPosition) {
+			case 'fullTab':
+				return OutputLogTab.create();
+
+			case 'bottomPane':
+				return new BottomPaneLogDisplay(this.bottomPane);
+
+			case 'rightPane':
+				components.sidebarLogDisplay ??= new SidebarLogDisplay();
+				return components.sidebarLogDisplay;
 		}
 	}
 
@@ -631,6 +645,28 @@ export class ConstructorPlugin {
 		if (this.currentProjectComponents !== undefined) {
 			this.executeTask('Package', this.currentProjectComponents);
 		}
+	}
+
+	reopenLastOutputLog = () => {
+		const outputLog = JobOutputLog.findDetached()
+			?? JobOutputLog.instances.at(-1);
+
+		if (outputLog === undefined) {
+			return;
+		}
+
+		if (outputLog.display !== undefined) {
+			outputLog.display.bringToForeground();
+			return;
+		}
+
+		if (this.currentProjectComponents === undefined) {
+			return;
+		}
+
+		const display = this.createOutputDisplay(this.currentProjectComponents);
+		outputLog.attachDisplay(display);
+		display.bringToForeground();
 	}
 
 	/**
@@ -697,8 +733,8 @@ export class ConstructorPlugin {
 	 * @private
 	 */
 	destroyAllDisplays = () => {
-		for (const log of JobOutputLog.instances) {
-			log.display?.destroy();
+		for (const log of [...JobOutputLog.instances]) {
+			log.destroy();
 		}
 
 		delete this.currentProjectComponents?.sidebarLogDisplay;

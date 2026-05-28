@@ -51,6 +51,7 @@ export class OutputLogTab extends ConstructorTab {
 	}
 
 	destroy() {
+		this.client?.displayClosed();
 		this.disconnect();
 
 		if (this.shouldCloseGMEditFile) {
@@ -92,14 +93,17 @@ export class OutputLogTab extends ConstructorTab {
 			return;
 		}
 
-		this.client.displayClosed();
-
 		for (const child of Array.from(this.element.children)) {
 			if (child !== this.errorsGroup) {
 				child.remove();
 			}
 		}
 
+		this.errorsGroup
+			.querySelectorAll(':scope > :not(legend)')
+			.forEach(error => error.remove());
+
+		this.errorsGroup.hidden = true;
 		this.client = undefined;
 	}
 

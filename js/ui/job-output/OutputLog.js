@@ -20,7 +20,7 @@ export class JobOutputLog {
 	/**
 	 * @private
 	 */
-	content = new DocumentFragment();
+	header = document.createElement('header');
 
 	/**
 	 * @private
@@ -50,6 +50,32 @@ export class JobOutputLog {
 
 	/**
 	 * @private
+	 */
+	stdout = '';
+
+	/**
+	 * @private
+	 */
+	stdoutStartIndex = 0;
+
+	/**
+	 * @private
+	 * @type {GM.Job.Error[]}
+	 */
+	errors = [];
+
+	/**
+	 * @private
+	 */
+	lastDetachedAt = 0;
+
+	/**
+	 * @type {UI.OutputLogDisplay|undefined}
+	 */
+	display = undefined;
+
+	/**
+	 * @private
 	 * @param {GM.Job} job 
 	 * @param {UI.OutputLogDisplay} display 
 	 */
@@ -59,17 +85,14 @@ export class JobOutputLog {
 
 		this.updateTitle();
 
-		const header = document.createElement('header');
-		header.appendChild(this.jobNameHeading);
+		this.header.appendChild(this.jobNameHeading);
 
 		const navButtonsGroup = document.createElement('nav');
 		PreferencesUI.addButton(navButtonsGroup, 'Stop', this.stopJob);
+		PreferencesUI.addButton(navButtonsGroup, 'Clear output', this.clearOutput);
 		PreferencesUI.addButton(navButtonsGroup, 'Go to bottom', this.goToBottom);
 		PreferencesUI.addButton(navButtonsGroup, 'Show directory', this.showDirectory);
-		header.appendChild(navButtonsGroup);
-		
-		this.content.appendChild(header);
-		this.content.appendChild(this.logAceEditor.container);
+		this.header.appendChild(navButtonsGroup);
 
 		/** @private */
 		this.jobEventGroup = job.events.createGroup({
@@ -78,11 +101,18 @@ export class JobOutputLog {
 			stopping: this.updateTitle
 		});
 
+		if (job instanceof IgorJob) {
+			this.stdout = job.stdout;
+		}
+
 		/** @private */
 		this.tickIntervalId = setInterval(this.updateTitle, 1000);
 	}
 
-	destroy() {
+	/**
+	 * @param {boolean} [closeDisplay]
+	 */
+	destroy(closeDisplay = true) {
 		const instanceIndex = JobOutputLog.instances.indexOf(this);
 
 		if (instanceIndex < 0) {
@@ -95,11 +125,26 @@ export class JobOutputLog {
 		this.jobEventGroup.destroy();
 		this.job.stop();
 
+		const display = this.display;
+		this.display = undefined;
+
+		if (display?.getClient() === this) {
+			if (closeDisplay) {
+				display.destroy();
+			} else {
+				display.disconnect();
+			}
+		}
+
 		this.logAceEditor.destroy();
 	}
 
 	getContent() {
-		return this.content;
+		const content = new DocumentFragment();
+		content.appendChild(this.header);
+		content.appendChild(this.logAceEditor.container);
+
+		return content;
 	}
 
 	displayResized() {
@@ -112,9 +157,26 @@ export class JobOutputLog {
 	}
 
 	displayClosed() {
-		// Currently we can't move a client from one display to another, so display hang up means
-		// the job should end.
-		this.destroy();
+		this.display = undefined;
+		this.lastDetachedAt = Date.now();
+	}
+
+	/**
+	 * Attach this output log to a display.
+	 * @param {UI.OutputLogDisplay} display
+	 */
+	attachDisplay(display) {
+		const currentClient = display.getClient();
+
+		if (currentClient instanceof JobOutputLog && currentClient !== this) {
+			currentClient.destroy(false);
+		}
+
+		this.display = display;
+		display.connect(this);
+		this.errors.forEach(error => display.addError(error));
+		this.updateTitle();
+		this.displayResized();
 	}
 
 	/**
@@ -148,6 +210,16 @@ export class JobOutputLog {
 	}
 
 	/**
+	 * Clear the visible output while continuing to show new output from a running job.
+	 * @private
+	 */
+	clearOutput = () => {
+		this.stdoutStartIndex = this.stdout.length;
+		this.logAceEditor.session.setValue('');
+		this.goToBottom();
+	}
+
+	/**
 	 * Callback on updates to the output of the attached Job.
 	 * 
 	 * @private
@@ -157,7 +229,8 @@ export class JobOutputLog {
 		const followOutput = this.shouldFollowOutput();
 		const cursor = this.logAceEditor.getCursorPosition();
 		
-		this.logAceEditor.session.setValue(content);
+		this.stdout = content;
+		this.logAceEditor.session.setValue(content.slice(this.stdoutStartIndex));
 		this.logAceEditor.moveCursorToPosition(cursor);
 
 		if (followOutput) {
@@ -174,8 +247,9 @@ export class JobOutputLog {
 	onJobStop = ({ errors }) => {
 		clearInterval(this.tickIntervalId);
 		this.updateTitle();
+		this.errors.push(...errors);
 
-		if (errors.length > 0) {
+		if (this.display !== undefined && errors.length > 0) {
 			errors.forEach(it => this.display.addError(it));
 
 			this.logAceEditor.resize();
@@ -217,7 +291,7 @@ export class JobOutputLog {
 		// TODO: Format time nicely here :)
 		const duration = ((Date.now() - this.job.startTime.getTime()) / 1000).toString();
 
-		if (this.display.supportsTitle()) {
+		if (this.display?.supportsTitle()) {
 			this.display.setTitle(title, status);
 			this.jobNameHeading.textContent = `${duration} seconds`;
 		} else {
@@ -242,7 +316,7 @@ export class JobOutputLog {
 		const outputLog = new JobOutputLog(job, display);
 		JobOutputLog.instances.push(outputLog);
 
-		display.connect(outputLog);
+		outputLog.attachDisplay(display);
 	}
 
 	/**
@@ -251,5 +325,15 @@ export class JobOutputLog {
 	 */
 	static findIdle() {
 		return this.instances.find(it => !it.isRunning) ?? this.instances[0];
+	}
+
+	/**
+	 * Find the most recently closed output log.
+	 * @returns {JobOutputLog|undefined}
+	 */
+	static findDetached() {
+		return this.instances
+			.filter(it => it.display === undefined)
+			.sort((a, b) => b.lastDetachedAt - a.lastDetachedAt)[0];
 	}
 }
