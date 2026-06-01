@@ -129,6 +129,10 @@ declare global {
 			static showItemInFolder(path: string): void;
 		}
 
+		interface IPC {
+			send(channel: string, ...args: unknown[]): void;
+		}
+
 	};
 	
 	const Electron_Menu: typeof Electron.Menu;
@@ -137,6 +141,7 @@ declare global {
 	const Electron_FS: typeof fs;
 	const Electron_Dialog: Electron.Dialog;
 	const Electron_Shell: typeof Electron.Shell;
+	const Electron_IPC: Electron.IPC;
 
 };
 

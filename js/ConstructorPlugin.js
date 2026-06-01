@@ -22,6 +22,7 @@ import { BottomPaneLogDisplay } from './ui/job-output/BottomPaneLogDisplay.js';
 import { SidebarLogDisplay } from './ui/job-output/SidebarLogDisplay.js';
 import { GMRuntimeVersion } from './compiler/GMVersion.js';
 import { NodeJSDiskIO } from './utils/io/NodeJSDiskIO.js';
+import { TaskbarBuildIndicator } from './ui/TaskbarBuildIndicator.js';
 
 /**
  * Name of the plugin 
@@ -80,6 +81,12 @@ export class ConstructorPlugin {
 	bottomPane;
 
 	/**
+	 * @private
+	 * @type {TaskbarBuildIndicator}
+	 */
+	taskbarBuildIndicator;
+
+	/**
 	 * Initialise an instance of the plugin!
 	 * 
 	 * @param {string} pluginName Name of the plugin.
@@ -135,6 +142,7 @@ export class ConstructorPlugin {
 
 		/** @private */
 		this.diskIO = diskIO;
+		this.taskbarBuildIndicator = new TaskbarBuildIndicator(pluginPath);
 
 		this.hamburgerOptions = new HamburgerOptions({
 			showControlPanel: this.showControlPanel,
@@ -207,6 +215,7 @@ export class ConstructorPlugin {
 		GMEdit.off('projectPropertiesBuilt', this.onProjectPropertiesBuilt);
 
 		this.preferences.events.off('setOutputPosition', this.destroyAllDisplays);
+		this.taskbarBuildIndicator.destroy(this.currentProjectComponents?.project);
 		this.bottomPane.destroy();
 
 		if (this.currentProjectComponents !== undefined) {
@@ -345,6 +354,7 @@ export class ConstructorPlugin {
 
 		this.controlPanel.clearProjectPropertiesMenu();
 		this.hamburgerOptions.enableProjectActionItems(false);
+		this.taskbarBuildIndicator.destroy();
 		this.destroyCurrentProjectComponents();
 		
 	};
@@ -582,6 +592,8 @@ export class ConstructorPlugin {
 			this.controlPanel.error('Failed to run Igor job!', job.err);
 			return;
 		}
+
+		this.taskbarBuildIndicator.track(job.data, project);
 
 		if (display === undefined) {
 			display = this.createOutputDisplay(components);

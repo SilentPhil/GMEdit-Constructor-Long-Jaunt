@@ -377,6 +377,12 @@ export declare global {
 			config: string;
 			dir: string;
 			path: string;
+			isVirtual: boolean;
+			version: {
+				name: string;
+				dir: string;
+				label: string;
+			};
 			properties: ProjectData;
 			propertiesElement: HaxeNull<HTMLDivElement>;
 
