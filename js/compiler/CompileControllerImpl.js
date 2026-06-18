@@ -84,8 +84,8 @@ export class CompileControllerImpl {
 		
 		const flags = this.getFlagsForJobSettings(settings);
 
-		const existingJob = this.jobs[id];
-		await existingJob?.stop();
+		const existingJobs = this.jobs.filter(job => job.id === id);
+		await Promise.all(existingJobs.map(job => job.stop()));
 
 		/** @type {import('node:child_process').SpawnOptionsWithoutStdio} */
 		const spawn_opts = {
@@ -224,7 +224,11 @@ export class CompileControllerImpl {
 	 * @param {IgorJob} job
 	 */
 	removeJob(job) {
-		this.jobs.splice(this.jobs.indexOf(job), 1);
+		const jobIndex = this.jobs.indexOf(job);
+
+		if (jobIndex >= 0) {
+			this.jobs.splice(jobIndex, 1);
+		}
 	}
 
 	/**

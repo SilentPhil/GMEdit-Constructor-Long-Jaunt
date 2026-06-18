@@ -1,0 +1,112 @@
+import assert from 'node:assert';
+import { EventEmitter } from 'node:events';
+import * as nodePath from 'node:path';
+import test from 'node:test';
+import { HOST_PLATFORM } from '../../js/compiler/igor-paths.js';
+import { inject } from '../../js/utils/node/node-import.js';
+import { assertOk } from '../index.js';
+import { MockDiskIO } from '../utils/io/MockDiskIO.js';
+
+class FakeProcess extends EventEmitter {
+	/**
+	 * @param {string} command
+	 * @param {string[]} args
+	 */
+	constructor(command, args) {
+		super();
+		this.spawnargs = [command, ...args];
+		this.stdout = new EventEmitter();
+		this.stderr = new EventEmitter();
+		this.pid = FakeProcess.nextPid++;
+		this.exitCode = null;
+
+		queueMicrotask(() => this.emit('spawn'));
+	}
+
+	static nextPid = 1;
+}
+
+test.suite('CompileControllerImpl', () => {
+	test('stops the matching live job when reusing an id after earlier jobs finish', async () => {
+		globalThis.$gmedit = {
+			'ui.Preferences': {}
+		};
+
+		const { CompileControllerImpl } = await import('../../js/compiler/CompileControllerImpl.js');
+		const spawnedProcesses = [];
+
+		inject({
+			path: nodePath,
+			child_process: {
+				spawn(command, args) {
+					const process = new FakeProcess(command, args);
+					spawnedProcesses.push(process);
+					return process;
+				}
+			}
+		});
+
+		const diskIO = new MockDiskIO({});
+		const controller = new CompileControllerImpl({
+			dir: 'project',
+			path: diskIO.joinPath('project', 'project.yyp'),
+			displayName: 'project'
+		}, diskIO);
+
+		const job0Result = await controller.start(createSettings(diskIO), 0);
+		const job1Result = await controller.start(createSettings(diskIO), 1);
+		assertOk(job0Result);
+		assertOk(job1Result);
+
+		const job0 = job0Result.data;
+		const job1 = job1Result.data;
+
+		job0.process.exitCode = 0;
+		job0.process.emit('exit');
+
+		let stoppedJobId;
+		job1.stop = async () => {
+			stoppedJobId = job1.id;
+			job1.process.exitCode = 0;
+			job1.process.emit('exit');
+			return {
+				ok: true,
+				data: {
+					stopType: 'Stopped',
+					errors: []
+				}
+			};
+		};
+
+		const reusedJobResult = await controller.start(createSettings(diskIO), 1);
+		assertOk(reusedJobResult);
+
+		assert.equal(stoppedJobId, 1);
+		assert.equal(reusedJobResult.data.id, 1);
+		assert.equal(spawnedProcesses.length, 3);
+	});
+});
+
+/**
+ * @param {DiskIO} diskIO
+ * @returns {GMS2.IgorSettings}
+ */
+function createSettings(diskIO) {
+	return {
+		task: 'Run',
+		user: {
+			fullPath: diskIO.joinPath('users', 'user.json')
+		},
+		runtime: {
+			path: 'runtime',
+			igorPath: diskIO.joinPath('runtime', 'Igor'),
+			version: {
+				supportsPrefabsPath: () => false
+			}
+		},
+		buildPath: 'build',
+		platform: HOST_PLATFORM,
+		runtimeType: 'VM',
+		configName: 'Default'
+	};
+}

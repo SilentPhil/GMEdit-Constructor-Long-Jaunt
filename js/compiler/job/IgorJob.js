@@ -273,6 +273,10 @@ export class IgorJob {
 				// the runner to write STDOUT to, is going to be the runner, or anything else affiliated
 				// with this compile, and kill these processes.
 
+				const rootProcessKillResult = (pid === undefined)
+					? Ok(undefined)
+					: killRecursive(pid, force);
+
 				const debug_log_path = path.join(this.settings.buildPath, 'output', 'debug.log');
 
 				try {
@@ -295,6 +299,10 @@ export class IgorJob {
 						'Failed stopping MacOS-specific residual processes',
 						err
 					));
+				}
+
+				if (!rootProcessKillResult.ok) {
+					return rootProcessKillResult;
 				}
 
 			break;
