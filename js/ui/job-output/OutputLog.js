@@ -43,20 +43,11 @@ export class JobOutputLog {
 			linter: false
 		}))
 		.also(it => it.setReadOnly(true))
+		.also(it => it.session.setUndoManager(null))
 		.also(it => it.setOption('scrollPastEnd', 0))
 		.also(it => it.renderer.setShowGutter(false))
 		.also(it => it.renderer.setShowPrintMargin(false))
 		.value;
-
-	/**
-	 * @private
-	 */
-	stdout = '';
-
-	/**
-	 * @private
-	 */
-	stdoutStartIndex = 0;
 
 	/**
 	 * @private
@@ -96,13 +87,13 @@ export class JobOutputLog {
 
 		/** @private */
 		this.jobEventGroup = job.events.createGroup({
-			stdout: this.onJobStdout,
+			output: this.onJobOutput,
 			stop: this.onJobStop,
 			stopping: this.updateTitle
 		});
 
 		if (job instanceof IgorJob) {
-			this.stdout = job.stdout;
+			this.insertOutput(job.stdout);
 		}
 
 		/** @private */
@@ -214,23 +205,40 @@ export class JobOutputLog {
 	 * @private
 	 */
 	clearOutput = () => {
-		this.stdoutStartIndex = this.stdout.length;
 		this.logAceEditor.session.setValue('');
 		this.goToBottom();
 	}
 
 	/**
-	 * Callback on updates to the output of the attached Job.
+	 * Append content to the visible output.
+	 *
+	 * @private
+	 * @param {string} content
+	 */
+	insertOutput(content) {
+		if (content.length === 0) {
+			return;
+		}
+
+		const session = this.logAceEditor.session;
+		const lastRow = session.getLength() - 1;
+		session.insert({
+			row: lastRow,
+			column: session.getLine(lastRow).length
+		}, content);
+	}
+
+	/**
+	 * Callback for new output from the attached Job.
 	 * 
 	 * @private
-	 * @param {string} content The content of the Job's STDOUT.
+	 * @param {string} content New content from the Job's STDOUT or STDERR.
 	 */
-	onJobStdout = (content) => {
+	onJobOutput = (content) => {
 		const followOutput = this.shouldFollowOutput();
 		const cursor = this.logAceEditor.getCursorPosition();
-		
-		this.stdout = content;
-		this.logAceEditor.session.setValue(content.slice(this.stdoutStartIndex));
+
+		this.insertOutput(content);
 		this.logAceEditor.moveCursorToPosition(cursor);
 
 		if (followOutput) {

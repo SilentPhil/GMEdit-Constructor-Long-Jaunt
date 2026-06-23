@@ -12,7 +12,7 @@ const BUILD_OVERLAY_ICON = 'build-in-progress.png';
 export class TaskbarBuildIndicator {
 	/**
 	 * @private
-	 * @type {Map<GM.Job, { eventGroup: Destroyable, project: GMEdit.Project }>}
+	 * @type {Map<GM.Job, { eventGroup: Destroyable, project: GMEdit.Project, outputTail: string }>}
 	 */
 	activeBuilds = new Map();
 
@@ -41,11 +41,11 @@ export class TaskbarBuildIndicator {
 		this.activeBuilds.get(job)?.eventGroup.destroy();
 
 		const eventGroup = job.events.createGroup({
-			stdout: (stdout) => this.onJobStdout(job, project, stdout),
+			output: (output) => this.onJobOutput(job, project, output),
 			stop: () => this.completeBuild(job, project)
 		});
 
-		this.activeBuilds.set(job, { eventGroup, project });
+		this.activeBuilds.set(job, { eventGroup, project, outputTail: '' });
 		this.refreshOverlay(project);
 	}
 
@@ -65,12 +65,22 @@ export class TaskbarBuildIndicator {
 	 * @private
 	 * @param {GM.Job} job
 	 * @param {GMEdit.Project} project
-	 * @param {string} stdout
+	 * @param {string} output
 	 */
-	onJobStdout(job, project, stdout) {
-		if (stdout.includes(RUN_BUILD_COMPLETE_MARKER)) {
-			this.completeBuild(job, project);
+	onJobOutput(job, project, output) {
+		const activeBuild = this.activeBuilds.get(job);
+
+		if (activeBuild === undefined) {
+			return;
 		}
+
+		const markerWindow = activeBuild.outputTail + output;
+		if (markerWindow.includes(RUN_BUILD_COMPLETE_MARKER)) {
+			this.completeBuild(job, project);
+			return;
+		}
+
+		activeBuild.outputTail = markerWindow.slice(-(RUN_BUILD_COMPLETE_MARKER.length - 1));
 	}
 
 	/**

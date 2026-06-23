@@ -57,7 +57,9 @@ export declare global {
 
 		namespace Job {
 			interface EventMap {
+				/** Complete output collected by the job so far. */
 				stdout: string;
+				/** Newly received output chunk. */
 				output: string;
 				stopping: void;
 				stop: {

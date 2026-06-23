@@ -27,6 +27,32 @@ class FakeProcess extends EventEmitter {
 }
 
 test.suite('CompileControllerImpl', () => {
+	test('emits incremental output while retaining complete stdout', async () => {
+		globalThis.$gmedit = {
+			'ui.Preferences': {}
+		};
+
+		const { IgorJob } = await import('../../js/compiler/job/IgorJob.js');
+		const process = new FakeProcess('igor', ['/v']);
+		const job = new IgorJob(0, {}, process, {}, new Date());
+		const initialStdout = job.stdout;
+		const outputChunks = [];
+		const stdoutSnapshots = [];
+
+		job.events.on('output', output => outputChunks.push(output));
+		job.events.on('stdout', stdout => stdoutSnapshots.push(stdout));
+
+		process.stdout.emit('data', Buffer.from('first\r\n'));
+		process.stderr.emit('data', Buffer.from('second'));
+
+		assert.deepEqual(outputChunks, ['first\n', 'second']);
+		assert.deepEqual(stdoutSnapshots, [
+			initialStdout + 'first\n',
+			initialStdout + 'first\nsecond'
+		]);
+		assert.equal(job.stdout, initialStdout + 'first\nsecond');
+	});
+
 	test('stops the matching live job when reusing an id after earlier jobs finish', async () => {
 		globalThis.$gmedit = {
 			'ui.Preferences': {}

@@ -82,12 +82,12 @@ export class IgorJob {
 	 * @param {any?} chunk
 	 */
 	#onStdoutData = (chunk) => {
-
 		const str = chunk
 			.toString()
 			.replaceAll(/\r/g, '');
-		
+
 		this.stdout += str;
+		this.eventEmitter.emit('output', str);
 		this.eventEmitter.emit('stdout', this.stdout);
 
 	}
