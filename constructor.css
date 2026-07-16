@@ -175,6 +175,69 @@ fieldset.gm-constructor-debug {
 *     Compile Window    *
 *************************/
 
+.gm-constructor-output-tabs {
+	min-height: 0;
+}
+
+.gm-constructor-output-tab-list {
+	display: none;
+	flex: 0 0 auto;
+	align-items: stretch;
+	min-height: 2em;
+	border-bottom: 1px solid rgba(127, 127, 127, 0.4);
+	background: rgba(0, 0, 0, 0.12);
+	position: relative;
+	z-index: 1;
+}
+
+.gm-constructor-output-tab-list.has-multiple-tabs {
+	display: flex;
+}
+
+.gm-constructor-output-tab-list > button {
+	padding: 0.35em 0.9em;
+	border: 0;
+	border-right: 1px solid rgba(127, 127, 127, 0.3);
+	border-bottom: 2px solid transparent;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+
+.gm-constructor-output-tab-list > button:hover,
+.gm-constructor-output-tab-list > button:focus-visible {
+	background: rgba(127, 127, 127, 0.16);
+	outline: none;
+}
+
+.gm-constructor-output-tab-list > button.active {
+	border-bottom-color: var(--color-primary, currentColor);
+	background: rgba(127, 127, 127, 0.22);
+}
+
+.gm-constructor-output-tab-page {
+	display: flex;
+	flex-direction: column;
+	position: static;
+	box-sizing: border-box;
+	flex: 1 1 auto;
+	width: 100%;
+	min-height: 0;
+}
+
+.gm-constructor-output-errors-host {
+	display: flex;
+	flex: 1 1 auto;
+	flex-direction: column;
+	width: 100%;
+	min-height: 0;
+}
+
+.gm-constructor-output-tab-page[hidden] {
+	display: none;
+}
+
 .gm-constructor-viewer fieldset, .gm-constructor-viewer-bottom-pane {
 	padding: 0.5em;
 	transition: 0.25s ease;

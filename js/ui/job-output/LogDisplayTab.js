@@ -1,5 +1,4 @@
 import { ConstructorTab } from '../tabs/ConstructorTab.js';
-import * as ui from '../ui-wrappers.js';
 import { GmlFileUtils } from '../../utils/gmedit/GmlFileUtils.js';
 
 const FileKind = $gmedit['file.FileKind'];
@@ -12,9 +11,29 @@ const GmlFile = $gmedit['gml.file.GmlFile'];
 export class OutputLogTab extends ConstructorTab {
 	/**
 	 * @private
-	 * @type {UI.Group}
+	 * @type {HTMLDivElement}
 	 */
-	errorsGroup;
+	errorsPage;
+
+	/** @private */
+	errorsHost = document.createElement('div');
+
+	/**
+	 * The original output nodes stay as direct children of the GMEdit tab. Ace and GMEdit both
+	 * rely on that layout when calculating the editor height.
+	 * @private
+	 * @type {Node[]}
+	 */
+	outputElements = [];
+
+	/** @private */
+	tabList = document.createElement('nav');
+
+	/** @private */
+	outputTabButton = document.createElement('button');
+
+	/** @private */
+	errorsTabButton = document.createElement('button');
 
 	/**
 	 * @private
@@ -38,19 +57,88 @@ export class OutputLogTab extends ConstructorTab {
 	constructor(file) {
 		super(file);
 
-		this.element.classList.add('gm-constructor-viewer', 'popout-window');
+		this.element.classList.add('gm-constructor-output-tabs', 'gm-constructor-viewer', 'popout-window');
 
-		this.errorsGroup = ui.group(this.element, 'Errors')
-		this.errorsGroup.classList.add('gm-constructor-viewer-errors');
-		this.errorsGroup.legend.addEventListener('click', () => this.client?.displayResized());
-		this.errorsGroup.addEventListener('gm-constructor-close-error', event => {
+		this.tabList.classList.add('gm-constructor-output-tab-list');
+		this.tabList.setAttribute('role', 'tablist');
+		this.tabList.setAttribute('aria-label', 'Job windows');
+
+		this.configureTabButton(this.outputTabButton, 'Job Output', () => this.showPage('output'));
+		this.configureTabButton(this.errorsTabButton, 'Error Window', () => this.showPage('errors'));
+		this.tabList.append(this.outputTabButton, this.errorsTabButton);
+
+		this.errorsPage = document.createElement('div');
+		this.errorsPage.classList.add(
+			'gm-constructor-output-tab-page',
+			'gm-constructor-viewer-bottom-pane',
+			'gm-constructor-viewer-errors'
+		);
+		this.errorsPage.setAttribute('role', 'tabpanel');
+		this.errorsPage.addEventListener('gm-constructor-close-error', event => {
 			event.detail.element.remove();
-			if (this.errorsGroup.querySelector(':scope > :not(legend)') === null) {
-				this.errorsGroup.hidden = true;
+			if (this.errorsPage.childElementCount === 0) {
+				this.setErrorsAvailable(false);
+				this.showPage('output');
 			}
 			this.client?.displayResized();
 		});
-		this.errorsGroup.hidden = true;
+
+		this.errorsHost.classList.add('gm-constructor-output-errors-host');
+		this.errorsHost.appendChild(this.errorsPage);
+		this.element.appendChild(this.tabList);
+		this.setErrorsAvailable(false);
+		this.showPage('output');
+	}
+
+	/**
+	 * @private
+	 * @param {HTMLButtonElement} button
+	 * @param {string} title
+	 * @param {() => void} onClick
+	 */
+	configureTabButton(button, title, onClick) {
+		button.type = 'button';
+		button.textContent = title;
+		button.classList.add('bottom-panel-tab');
+		button.setAttribute('role', 'tab');
+		button.addEventListener('click', onClick);
+	}
+
+	/**
+	 * @private
+	 * @param {'output'|'errors'} page
+	 */
+	showPage(page) {
+		const showErrors = page === 'errors' && this.errorsPage.childElementCount > 0;
+
+		if (showErrors) {
+			this.outputElements.forEach(element => element.remove());
+			this.errorsHost.prepend(this.tabList);
+			if (this.errorsHost.parentElement !== this.element) {
+				this.element.appendChild(this.errorsHost);
+			}
+		} else {
+			this.errorsHost.remove();
+			this.element.prepend(this.tabList);
+			this.tabList.after(...this.outputElements);
+		}
+		this.outputTabButton.classList.toggle('active', !showErrors);
+		this.errorsTabButton.classList.toggle('active', showErrors);
+		this.outputTabButton.setAttribute('aria-selected', String(!showErrors));
+		this.errorsTabButton.setAttribute('aria-selected', String(showErrors));
+
+		requestAnimationFrame(() => this.client?.displayResized());
+	}
+
+	/**
+	 * Show the tab strip only while there are two pages to choose from.
+	 * @private
+	 * @param {boolean} available
+	 */
+	setErrorsAvailable(available) {
+		this.tabList.classList.toggle('has-multiple-tabs', available);
+		this.tabList.style.display = available ? 'flex' : 'none';
+		this.errorsTabButton.disabled = !available;
 	}
 
 	stateSave() {
@@ -83,13 +171,12 @@ export class OutputLogTab extends ConstructorTab {
 		}
 
 		this.client = client;
-		this.element.prepend(client.getContent());
-		
-		this.errorsGroup
-			.querySelectorAll(':scope > :not(legend)')
-			.forEach(error => error.remove());
-
-		this.errorsGroup.hidden = true;
+		const content = client.getContent();
+		this.outputElements = Array.from(content.childNodes);
+		this.tabList.after(content);
+		this.errorsPage.textContent = '';
+		this.setErrorsAvailable(false);
+		this.showPage('output');
 	}
 
 	/**
@@ -100,17 +187,12 @@ export class OutputLogTab extends ConstructorTab {
 			return;
 		}
 
-		for (const child of Array.from(this.element.children)) {
-			if (child !== this.errorsGroup) {
-				child.remove();
-			}
-		}
-
-		this.errorsGroup
-			.querySelectorAll(':scope > :not(legend)')
-			.forEach(error => error.remove());
-
-		this.errorsGroup.hidden = true;
+		this.outputElements.forEach(element => element.remove());
+		this.outputElements = [];
+		this.errorsHost.remove();
+		this.errorsPage.textContent = '';
+		this.setErrorsAvailable(false);
+		this.showPage('output');
 		this.client = undefined;
 	}
 
@@ -119,6 +201,7 @@ export class OutputLogTab extends ConstructorTab {
 	 */
 	bringToForeground() {
 		this.focus();
+		requestAnimationFrame(() => this.client?.displayResized());
 	}
 
 	/**
@@ -139,8 +222,9 @@ export class OutputLogTab extends ConstructorTab {
 	 * @type {UI.OutputLogDisplay['addError']}
 	 */
 	addError(error) {
-		this.errorsGroup.prepend(error.asHTML());
-		this.errorsGroup.hidden = false;
+		this.errorsPage.prepend(error.asHTML());
+		this.setErrorsAvailable(true);
+		this.showPage('errors');
 	}
 
 	/**
