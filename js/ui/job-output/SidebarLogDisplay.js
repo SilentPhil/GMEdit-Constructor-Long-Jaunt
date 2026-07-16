@@ -98,6 +98,13 @@ export class SidebarLogDisplay {
 		if (this.errorsTabElement === undefined) {
 			this.errorsTabElement = document.createElement('div');
 			this.errorsTabElement.classList.add('gm-constructor-tab', 'gm-constructor-viewer-bottom-pane', 'gm-constructor-viewer-errors', 'popout-window');
+			this.errorsTabElement.addEventListener('gm-constructor-close-error', event => {
+				event.detail.element.remove();
+				if (this.errorsTabElement?.childElementCount === 0) {
+					GMEdit.sidebar.remove(ERRORS_TAB_NAME, this.errorsTabElement);
+					this.errorsTabElement = undefined;
+				}
+			});
 
 			GMEdit.sidebar.add(ERRORS_TAB_NAME, this.errorsTabElement);
 		}

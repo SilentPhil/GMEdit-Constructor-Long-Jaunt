@@ -20,6 +20,8 @@ import { BottomPane } from './ui/BottomPane.js';
 import { JobOutputLog } from './ui/job-output/OutputLog.js';
 import { BottomPaneLogDisplay } from './ui/job-output/BottomPaneLogDisplay.js';
 import { SidebarLogDisplay } from './ui/job-output/SidebarLogDisplay.js';
+import { PanelErrorDisplay } from './ui/job-output/PanelErrorDisplay.js';
+import { BottomPaneErrorDisplay } from './ui/job-output/BottomPaneErrorDisplay.js';
 import { GMRuntimeVersion } from './compiler/GMVersion.js';
 import { NodeJSDiskIO } from './utils/io/NodeJSDiskIO.js';
 import { TaskbarBuildIndicator } from './ui/TaskbarBuildIndicator.js';
@@ -197,6 +199,7 @@ export class ConstructorPlugin {
 
 		this.bottomPane = new BottomPane();
 		this.preferences.events.on('setOutputPosition', this.destroyAllDisplays);
+		this.preferences.events.on('setErrorPosition', this.destroyAllDisplays);
 		this.preferences.events.on('setOutputFontSize', JobOutputLog.setFontSize);
 		
 		GMEdit.on('projectOpen', this.onProjectOpen);
@@ -216,6 +219,7 @@ export class ConstructorPlugin {
 		GMEdit.off('projectPropertiesBuilt', this.onProjectPropertiesBuilt);
 
 		this.preferences.events.off('setOutputPosition', this.destroyAllDisplays);
+		this.preferences.events.off('setErrorPosition', this.destroyAllDisplays);
 		this.preferences.events.off('setOutputFontSize', JobOutputLog.setFontSize);
 		this.taskbarBuildIndicator.destroy(this.currentProjectComponents?.project);
 		this.bottomPane.destroy();
@@ -602,7 +606,8 @@ export class ConstructorPlugin {
 		}
 
 		outputToReuse?.destroy(false);
-		JobOutputLog.create(job.data, display, this.preferences.outputFontSize);
+		const errorDisplay = this.createErrorDisplay(job.data);
+		JobOutputLog.create(job.data, display, this.preferences.outputFontSize, errorDisplay);
 
 		if (this.preferences.shouldFocusOutput) {
 			display.bringToForeground();
@@ -627,6 +632,39 @@ export class ConstructorPlugin {
 			case 'rightPane':
 				components.sidebarLogDisplay ??= new SidebarLogDisplay();
 				return components.sidebarLogDisplay;
+		}
+	}
+
+	/**
+	 * Create an independent error display when errors should not share the output display.
+	 * Returning undefined preserves the original same-as-output behaviour.
+	 *
+	 * @private
+	 * @param {GM.Job} job
+	 * @returns {{addError(error: GM.Job.Error): void, destroy(): void}|undefined}
+	 */
+	createErrorDisplay(job) {
+		let title = `${job.platform} ${job.task}`;
+		if (JobOutputLog.instances.length > 0) {
+			title += ` #${job.id}`;
+		}
+		title += ': Errors';
+
+		switch (this.preferences.errorPosition) {
+			case 'sameAsOutput':
+				return undefined;
+
+			case 'bottomPanel':
+				if (GMEdit.bottomPanel !== undefined) {
+					return new PanelErrorDisplay(GMEdit.bottomPanel, title);
+				}
+				return new BottomPaneErrorDisplay(this.bottomPane, title);
+
+			case 'leftBottomPanel':
+				if (GMEdit.leftBottomPanel?.available) {
+					return new PanelErrorDisplay(GMEdit.leftBottomPanel, title);
+				}
+				return undefined;
 		}
 	}
 

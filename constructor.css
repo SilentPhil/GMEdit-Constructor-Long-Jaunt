@@ -219,3 +219,155 @@ fieldset.gm-constructor-debug {
 .gm-constructor-viewer-errors {
 	font-size: large;
 }
+
+.gm-constructor-viewer-bottom-pane.gm-constructor-viewer-errors:has(> .gm-constructor-runtime-error) {
+	flex: 1 1 auto;
+	height: auto;
+	min-height: 0;
+	padding: 0;
+	overflow: hidden;
+}
+
+.gm-constructor-runtime-error {
+	display: flex;
+	box-sizing: border-box;
+	flex-direction: column;
+	min-width: 0;
+	min-height: 0;
+	margin: 0;
+	overflow: hidden;
+	background: rgba(0, 0, 0, 0.08);
+	font-size: 12px;
+	line-height: 1.35;
+	white-space: nowrap;
+}
+
+.gm-constructor-viewer-bottom-pane > .gm-constructor-runtime-error {
+	flex: 1 1 auto;
+	height: 100%;
+}
+
+#main.chrome-tabs-dark-theme .gm-constructor-runtime-error {
+	background: rgba(0, 0, 0, 0.38);
+}
+
+.gm-constructor-runtime-error-summary {
+	display: flex;
+	box-sizing: border-box;
+	flex: 0 0 auto;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 1em;
+	width: 100%;
+	padding: 0.8em 1em;
+	background: rgba(127, 127, 127, 0.12);
+	font-size: 14px;
+}
+
+.gm-constructor-runtime-error-summary-text {
+	min-width: 0;
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
+.gm-constructor-runtime-error-context {
+	font-size: 16px;
+}
+
+.gm-constructor-runtime-error-message {
+	margin: 0.65em 0 0;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	font-size: 14px;
+}
+
+.gm-constructor-runtime-error-actions {
+	display: flex;
+	flex: 0 0 auto;
+	gap: 0.5em;
+}
+
+.gm-constructor-runtime-error-copy {
+	flex: 0 0 auto;
+	min-width: 5em;
+	padding: 0.35em 0.7em;
+	border: 1px solid rgba(127, 127, 127, 0.45);
+	border-radius: 2px;
+	background: rgba(127, 127, 127, 0.16);
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+
+.gm-constructor-runtime-error-copy:hover,
+.gm-constructor-runtime-error-copy:focus-visible {
+	border-color: var(--color-primary, currentColor);
+	background: rgba(127, 127, 127, 0.28);
+	outline: none;
+}
+
+.gm-constructor-runtime-stack {
+	box-sizing: border-box;
+	flex: 1 1 auto;
+	width: 100%;
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	overflow: auto;
+	list-style: none;
+	border: 0;
+	background: transparent;
+	font-size: 11px;
+}
+
+.gm-constructor-runtime-stack > li {
+	width: max-content;
+	min-width: 100%;
+}
+
+.gm-constructor-runtime-stack > li:nth-child(odd) > .gm-constructor-runtime-stack-frame {
+	background: rgba(127, 127, 127, 0.04);
+}
+
+.gm-constructor-runtime-stack > li:nth-child(even) > .gm-constructor-runtime-stack-frame {
+	background: rgba(127, 127, 127, 0.11);
+}
+
+.gm-constructor-runtime-stack-frame {
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	min-width: max-content;
+	padding: 0.35em 0.55em;
+	border: 1px solid transparent;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.gm-constructor-runtime-stack-frame:hover:not(:disabled),
+.gm-constructor-runtime-stack-frame:focus-visible {
+	border-color: rgba(127, 127, 127, 0.45);
+	background: rgba(127, 127, 127, 0.18);
+	outline: none;
+}
+
+.gm-constructor-runtime-stack > li > .gm-constructor-runtime-stack-frame.selected {
+	border-color: var(--color-primary, currentColor);
+	background: color-mix(in srgb, var(--color-primary, currentColor) 22%, transparent);
+	box-shadow:
+		inset 3px 0 var(--color-primary, currentColor),
+		inset 0 0 12px color-mix(in srgb, var(--color-primary, currentColor) 18%, transparent);
+}
+
+.gm-constructor-runtime-stack-frame:disabled {
+	opacity: 0.75;
+	cursor: default;
+}
+
+.gm-constructor-error-position-link {
+	color: var(--color-primary, currentColor);
+	font-weight: 600;
+}

@@ -120,6 +120,23 @@ export class PreferencesMenu {
 				.singleline()
 				.appendTo(section);
 
+			this.errorPositionDropdown = new Dropdown('Job Error Position',
+					Some(this.preferences.errorPosition),
+					(value) => { this.preferences.errorPosition = value },
+					/** @type {ReadonlyArray<UI.Dropdown.Entry<TPreferences.ErrorPosition>>} */ ([
+						{ label: 'Same as Job Output', value: 'sameAsOutput' },
+						{ label: 'Bottom Panel', value: 'bottomPanel' },
+						{ label: 'Lower-left Panel', value: 'leftBottomPanel' }
+					])
+				)
+				.tooltip(docString(`
+					Where the error list should be shown when a job fails. The lower-left option
+					requires a GMEdit build that provides that panel and otherwise falls back to
+					the job output location.
+				`))
+				.singleline()
+				.appendTo(section);
+
 			this.outputFontSizeDropdown = new Dropdown('Job Output Font Size',
 					Some(this.preferences.outputFontSize),
 					(value) => { this.preferences.outputFontSize = value },
@@ -234,6 +251,7 @@ export class PreferencesMenu {
 			setReuseOutputTab: this.onSetReuseOutputTab,
 			setShowTooltipHints: this.onSetShowTooltipHints,
 			setOutputPosition: this.onSetOutputPosition,
+			setErrorPosition: this.onSetErrorPosition,
 			setOutputFontSize: this.onSetOutputFontSize,
 			setShouldFocusOutput: this.onSetShouldFocusOutput,
 			setUseGlobalBuildPath: this.onSetUseGlobalBuildPath,
@@ -291,6 +309,14 @@ export class PreferencesMenu {
 	 */
 	onSetOutputPosition = (outputPosition) => {
 		this.outputPositionDropdown.setSelectedOption(outputPosition);
+	}
+
+	/**
+	 * @private
+	 * @param {TPreferences.PreferencesEventMap['setErrorPosition']} errorPosition
+	 */
+	onSetErrorPosition = (errorPosition) => {
+		this.errorPositionDropdown.setSelectedOption(errorPosition);
 	}
 
 	/**

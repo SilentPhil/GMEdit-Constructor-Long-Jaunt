@@ -128,6 +128,12 @@ export class BottomPaneLogDisplay {
 		if (this.errorsTab === undefined) {
 			this.errorsTab = this.bottomPane.openTab(`${this.title}: Errors`, document.createElement('div'));
 			this.errorsTab.content.classList.add('gm-constructor-tab', 'gm-constructor-viewer-bottom-pane', 'gm-constructor-viewer-errors', 'popout-window');
+			this.errorsTab.content.addEventListener('gm-constructor-close-error', event => {
+				event.detail.element.remove();
+				if (this.errorsTab?.content.childElementCount === 0) {
+					this.bottomPane.closeTab(this.errorsTab);
+				}
+			});
 
 			this.errorsTab.events.on('close', () => {
 				this.errorsTab = undefined;

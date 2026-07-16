@@ -355,6 +355,13 @@ export declare global {
 			static remove(name: string, el?: HaxeNull<HTMLElement>): boolean;
 		}
 
+		class SharedPanel {
+			static readonly available: boolean;
+			static set(name: string): void;
+			static add(name: string, el: HTMLElement): void;
+			static remove(name: string, el?: HaxeNull<HTMLElement>): boolean;
+		}
+
 		type ProjectData = Partial<{
 			
 			/** API override */
@@ -593,6 +600,8 @@ export declare global {
 
 		const aceTools: AceTools;
 		const sidebar: typeof Sidebar;
+		const bottomPanel: typeof SharedPanel|undefined;
+		const leftBottomPanel: typeof SharedPanel|undefined;
 	
 		const register: (pluginName: string, data: PluginData) => void;
 		const on: <K extends keyof PluginEventMap>(type: K, listener: (e: PluginEventMap[K]) => void) => void;

@@ -255,6 +255,15 @@ export class BottomPane {
 	show() {
 		this.container.appendChild(this.element);
 		this.activeTab?.events.emit('contentResized', undefined);
+
+		// Shared-panel adapters can re-parent this element in a MutationObserver.
+		// Resize once more on the next frame, after it has reached its final host.
+		const activeTab = this.activeTab;
+		requestAnimationFrame(() => {
+			if (activeTab === this.activeTab && this.element.isConnected) {
+				activeTab?.events.emit('contentResized', undefined);
+			}
+		});
 	}
 
 	hide() {

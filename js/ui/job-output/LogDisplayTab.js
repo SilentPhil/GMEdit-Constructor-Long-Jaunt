@@ -43,6 +43,13 @@ export class OutputLogTab extends ConstructorTab {
 		this.errorsGroup = ui.group(this.element, 'Errors')
 		this.errorsGroup.classList.add('gm-constructor-viewer-errors');
 		this.errorsGroup.legend.addEventListener('click', () => this.client?.displayResized());
+		this.errorsGroup.addEventListener('gm-constructor-close-error', event => {
+			event.detail.element.remove();
+			if (this.errorsGroup.querySelector(':scope > :not(legend)') === null) {
+				this.errorsGroup.hidden = true;
+			}
+			this.client?.displayResized();
+		});
 		this.errorsGroup.hidden = true;
 	}
 

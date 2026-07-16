@@ -66,14 +66,27 @@ export class JobOutputLog {
 	display = undefined;
 
 	/**
+	 * Keeps Ace's viewport in sync when a display is moved between GMEdit panels.
+	 * @private
+	 * @type {ResizeObserver|undefined}
+	 */
+	resizeObserver = undefined;
+
+	/**
 	 * @private
 	 * @param {GM.Job} job 
 	 * @param {UI.OutputLogDisplay} display 
 	 */
-	constructor(job, display, fontSize) {
+	constructor(job, display, fontSize, errorDisplay) {
 		this.job = job;
 		this.display = display;
+		this.errorDisplay = errorDisplay;
 		this.setFontSize(fontSize);
+
+		if (typeof ResizeObserver !== 'undefined') {
+			this.resizeObserver = new ResizeObserver(() => this.displayResized());
+			this.resizeObserver.observe(this.logAceEditor.container);
+		}
 
 		this.updateTitle();
 
@@ -121,9 +134,13 @@ export class JobOutputLog {
 
 		JobOutputLog.instances.splice(instanceIndex, 1);
 		clearInterval(this.tickIntervalId);
+		this.resizeObserver?.disconnect();
+		this.resizeObserver = undefined;
 
 		this.jobEventGroup.destroy();
 		this.job.stop();
+		this.errorDisplay?.destroy();
+		this.errorDisplay = undefined;
 
 		const display = this.display;
 		this.display = undefined;
@@ -174,7 +191,9 @@ export class JobOutputLog {
 
 		this.display = display;
 		display.connect(this);
-		this.errors.forEach(error => display.addError(error));
+		if (this.errorDisplay === undefined) {
+			this.errors.forEach(error => display.addError(error));
+		}
 		this.updateTitle();
 		this.displayResized();
 	}
@@ -266,11 +285,17 @@ export class JobOutputLog {
 		this.updateTitle();
 		this.errors.push(...errors);
 
-		if (this.display !== undefined && errors.length > 0) {
-			errors.forEach(it => this.display.addError(it));
+		if (errors.length > 0) {
+			if (this.errorDisplay !== undefined) {
+				errors.forEach(it => this.errorDisplay.addError(it));
+			} else if (this.display !== undefined) {
+				errors.forEach(it => this.display.addError(it));
+			}
 
-			this.logAceEditor.resize();
-			this.goToBottom();
+			if (this.display !== undefined) {
+				this.logAceEditor.resize();
+				this.goToBottom();
+			}
 		}
 	}
 
@@ -329,8 +354,8 @@ export class JobOutputLog {
 	 * @param {GM.Job} job 
 	 * @param {UI.OutputLogDisplay} display 
 	 */
-	static create(job, display, fontSize) {
-		const outputLog = new JobOutputLog(job, display, fontSize);
+	static create(job, display, fontSize, errorDisplay) {
+		const outputLog = new JobOutputLog(job, display, fontSize, errorDisplay);
 		JobOutputLog.instances.push(outputLog);
 
 		outputLog.attachDisplay(display);

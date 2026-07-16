@@ -50,7 +50,32 @@ export class GMS2ErrorUtils {
 						});
 					}
 
-					return Err(new BaseError('TODO: best-effort parsing of LTS-style script identifiers'));
+					// LTS runtimes encode the root script inside generated function names, e.g.
+					// `anon_Foo_gml_GlobalScript_Foo_123_Foo_gml_GlobalScript_Foo`.
+					// The final marker is unambiguous even when script names contain underscores.
+					const globalScriptMarker = '_gml_GlobalScript_';
+					const rootMarkerPos = rest.lastIndexOf(globalScriptMarker);
+
+					if (rootMarkerPos >= 0) {
+						const rootScriptName = rest.substring(rootMarkerPos + globalScriptMarker.length);
+						const generatedFunctionName = rest.substring(0, rootMarkerPos);
+						const indexedFunctionMatch = generatedFunctionName.match(/_(?:[0-9]+)_(.+)$/);
+						const functionName = indexedFunctionMatch?.[1]
+							?? generatedFunctionName.replace(/^anon_/, '');
+
+						if (rootScriptName.length > 0 && functionName.length > 0) {
+							return Ok({
+								type: 'Script',
+								name: functionName,
+								definedIn: /** @type {GMS2.ErrorUtils.ScriptInfo.ScriptAsset} */ ({
+									type: 'GlobalScript',
+									name: rootScriptName
+								})
+							});
+						}
+					}
+
+					return Err(new BaseError(`Unable to find the source script for LTS identifier \`${fullName}\``));
 				}
 
 				/** @type {string} */

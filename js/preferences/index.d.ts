@@ -82,6 +82,9 @@ export declare global {
 			 */
 			outputPosition: OutputPosition;
 
+			/** Where errors produced by jobs should be shown. */
+			errorPosition: ErrorPosition;
+
 			/** Font size of compiler output, in pixels. */
 			outputFontSize: OutputFontSize;
 
@@ -165,6 +168,11 @@ export declare global {
 
 		type OutputFontSize = 10 | 12 | 14 | 16;
 
+		type ErrorPosition =
+			'sameAsOutput'  |
+			'bottomPanel'   |
+			'leftBottomPanel';
+
 		interface PreferencesEventMap {
 
 			setCheckForUpdates: { checkForUpdates: boolean };
@@ -174,6 +182,7 @@ export declare global {
 			setGlobalBuildPath: { globalBuildPath: string };
 			setShowTooltipHints: { showTooltipHints: boolean };
 			setOutputPosition: OutputPosition;
+			setErrorPosition: ErrorPosition;
 			setOutputFontSize: OutputFontSize;
 			setShouldFocusOutput: boolean;
 

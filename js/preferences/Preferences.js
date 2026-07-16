@@ -59,6 +59,7 @@ const PREFS_DEFAULT = {
 	global_build_path: def_global_build_path,
 	showTooltipHints: true,
 	outputPosition: 'fullTab',
+	errorPosition: 'sameAsOutput',
 	outputFontSize: 12,
 	shouldFocusOutput: true,
 };
@@ -87,6 +88,7 @@ export class Preferences {
 		'setGlobalBuildPath',
 		'setShowTooltipHints',
 		'setOutputPosition',
+		'setErrorPosition',
 		'setOutputFontSize',
 		'setShouldFocusOutput',
 		'setPrefabsPath',
@@ -483,6 +485,18 @@ export class Preferences {
 		this.save();
 		
 		this.eventEmitter.emit('setOutputPosition', value);
+	}
+
+	/** Where job errors should be displayed. */
+	get errorPosition() {
+		return this.prefs.errorPosition;
+	}
+
+	set errorPosition(value) {
+		this.prefs.errorPosition = value;
+		this.save();
+
+		this.eventEmitter.emit('setErrorPosition', value);
 	}
 
 	/**
