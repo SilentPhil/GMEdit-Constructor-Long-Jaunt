@@ -82,6 +82,9 @@ export declare global {
 			 */
 			outputPosition: OutputPosition;
 
+			/** Font size of compiler output, in pixels. */
+			outputFontSize: OutputFontSize;
+
 			/**
 			 * Whether to focus the output when starting a job.
 			 */
@@ -160,6 +163,8 @@ export declare global {
 			'bottomPane'	|
 			'rightPane'		;
 
+		type OutputFontSize = 10 | 12 | 14 | 16;
+
 		interface PreferencesEventMap {
 
 			setCheckForUpdates: { checkForUpdates: boolean };
@@ -169,6 +174,7 @@ export declare global {
 			setGlobalBuildPath: { globalBuildPath: string };
 			setShowTooltipHints: { showTooltipHints: boolean };
 			setOutputPosition: OutputPosition;
+			setOutputFontSize: OutputFontSize;
 			setShouldFocusOutput: boolean;
 
 			/**

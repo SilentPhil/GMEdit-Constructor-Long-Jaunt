@@ -59,6 +59,7 @@ const PREFS_DEFAULT = {
 	global_build_path: def_global_build_path,
 	showTooltipHints: true,
 	outputPosition: 'fullTab',
+	outputFontSize: 12,
 	shouldFocusOutput: true,
 };
 
@@ -86,6 +87,7 @@ export class Preferences {
 		'setGlobalBuildPath',
 		'setShowTooltipHints',
 		'setOutputPosition',
+		'setOutputFontSize',
 		'setShouldFocusOutput',
 		'setPrefabsPath',
 	]);
@@ -481,6 +483,20 @@ export class Preferences {
 		this.save();
 		
 		this.eventEmitter.emit('setOutputPosition', value);
+	}
+
+	/**
+	 * Font size of the compiler output editor, in pixels.
+	 */
+	get outputFontSize() {
+		return this.prefs.outputFontSize;
+	}
+
+	set outputFontSize(value) {
+		this.prefs.outputFontSize = value;
+		this.save();
+
+		this.eventEmitter.emit('setOutputFontSize', value);
 	}
 
 	/**

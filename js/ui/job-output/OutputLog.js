@@ -70,9 +70,10 @@ export class JobOutputLog {
 	 * @param {GM.Job} job 
 	 * @param {UI.OutputLogDisplay} display 
 	 */
-	constructor(job, display) {
+	constructor(job, display, fontSize) {
 		this.job = job;
 		this.display = display;
+		this.setFontSize(fontSize);
 
 		this.updateTitle();
 
@@ -98,6 +99,14 @@ export class JobOutputLog {
 
 		/** @private */
 		this.tickIntervalId = setInterval(this.updateTitle, 1000);
+	}
+
+	/**
+	 * @param {TPreferences.OutputFontSize} fontSize
+	 */
+	setFontSize(fontSize) {
+		this.logAceEditor.setOption('fontSize', fontSize);
+		this.logAceEditor.resize();
 	}
 
 	/**
@@ -320,11 +329,19 @@ export class JobOutputLog {
 	 * @param {GM.Job} job 
 	 * @param {UI.OutputLogDisplay} display 
 	 */
-	static create(job, display) {
-		const outputLog = new JobOutputLog(job, display);
+	static create(job, display, fontSize) {
+		const outputLog = new JobOutputLog(job, display, fontSize);
 		JobOutputLog.instances.push(outputLog);
 
 		outputLog.attachDisplay(display);
+	}
+
+	/**
+	 * Apply a new font size to every open output log.
+	 * @param {TPreferences.OutputFontSize} fontSize
+	 */
+	static setFontSize(fontSize) {
+		JobOutputLog.instances.forEach(outputLog => outputLog.setFontSize(fontSize));
 	}
 
 	/**

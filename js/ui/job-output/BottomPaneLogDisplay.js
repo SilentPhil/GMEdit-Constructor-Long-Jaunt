@@ -94,6 +94,11 @@ export class BottomPaneLogDisplay {
 	bringToForeground() {
 		this.bottomPane.show();
 		this.bottomPane.showTab(this.logTab);
+
+		// GMEdit Long Jaunt exposes legacy bottom panes as tabs in its shared
+		// bottom panel. Vanilla GMEdit has no such API, so keep the existing
+		// BottomPane behaviour there.
+		GMEdit.bottomPanel?.set('Job Output');
 	}
 
 	/**

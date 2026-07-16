@@ -120,6 +120,20 @@ export class PreferencesMenu {
 				.singleline()
 				.appendTo(section);
 
+			this.outputFontSizeDropdown = new Dropdown('Job Output Font Size',
+					Some(this.preferences.outputFontSize),
+					(value) => { this.preferences.outputFontSize = value },
+					/** @type {ReadonlyArray<UI.Dropdown.Entry<TPreferences.OutputFontSize>>} */ ([
+						{ label: 'Small (10 px)', value: 10 },
+						{ label: 'Medium (12 px)', value: 12 },
+						{ label: 'Large (14 px)', value: 14 },
+						{ label: 'Extra large (16 px)', value: 16 }
+					])
+				)
+				.tooltip('Font size used by the compiler output log in every output style.')
+				.singleline()
+				.appendTo(section);
+
 			this.shouldFocusOutputCheckbox = new Checkbox('Focus job output when starting a job',
 					this.preferences.shouldFocusOutput,
 					(value) => { this.preferences.shouldFocusOutput = value }
@@ -220,6 +234,7 @@ export class PreferencesMenu {
 			setReuseOutputTab: this.onSetReuseOutputTab,
 			setShowTooltipHints: this.onSetShowTooltipHints,
 			setOutputPosition: this.onSetOutputPosition,
+			setOutputFontSize: this.onSetOutputFontSize,
 			setShouldFocusOutput: this.onSetShouldFocusOutput,
 			setUseGlobalBuildPath: this.onSetUseGlobalBuildPath,
 			setGlobalBuildPath: this.onSetGlobalBuildPath,
@@ -276,6 +291,14 @@ export class PreferencesMenu {
 	 */
 	onSetOutputPosition = (outputPosition) => {
 		this.outputPositionDropdown.setSelectedOption(outputPosition);
+	}
+
+	/**
+	 * @private
+	 * @param {TPreferences.PreferencesEventMap['setOutputFontSize']} outputFontSize
+	 */
+	onSetOutputFontSize = (outputFontSize) => {
+		this.outputFontSizeDropdown.setSelectedOption(outputFontSize);
 	}
 
 	/**

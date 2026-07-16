@@ -197,6 +197,7 @@ export class ConstructorPlugin {
 
 		this.bottomPane = new BottomPane();
 		this.preferences.events.on('setOutputPosition', this.destroyAllDisplays);
+		this.preferences.events.on('setOutputFontSize', JobOutputLog.setFontSize);
 		
 		GMEdit.on('projectOpen', this.onProjectOpen);
 		GMEdit.on('projectClose', this.onProjectClose);
@@ -215,6 +216,7 @@ export class ConstructorPlugin {
 		GMEdit.off('projectPropertiesBuilt', this.onProjectPropertiesBuilt);
 
 		this.preferences.events.off('setOutputPosition', this.destroyAllDisplays);
+		this.preferences.events.off('setOutputFontSize', JobOutputLog.setFontSize);
 		this.taskbarBuildIndicator.destroy(this.currentProjectComponents?.project);
 		this.bottomPane.destroy();
 
@@ -600,7 +602,7 @@ export class ConstructorPlugin {
 		}
 
 		outputToReuse?.destroy(false);
-		JobOutputLog.create(job.data, display);
+		JobOutputLog.create(job.data, display, this.preferences.outputFontSize);
 
 		if (this.preferences.shouldFocusOutput) {
 			display.bringToForeground();
