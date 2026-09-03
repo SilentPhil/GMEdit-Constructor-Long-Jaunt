@@ -24,6 +24,15 @@ export class CompileControllerImpl {
 	jobs = [];
 
 	/**
+	 * The most recent successful Run job that can be launched again without rebuilding.
+	 * Settings keep the unresolved build root so {@link start} can reconstruct the same job path.
+	 *
+	 * @private
+	 * @type {{ settings: GMS2.IgorSettings, id: number, resolvedBuildPath: string }|undefined}
+	 */
+	lastSuccessfulBuild = undefined;
+
+	/**
 	 * @param {GMEdit.Project} project
 	 * @param {DiskIO} diskIO 
 	 */
@@ -62,8 +71,18 @@ export class CompileControllerImpl {
 			));
 		}
 
+		const reusableSettings = { ...settings };
 		const idString = id.toString();
-		settings.buildPath = this.diskIO.joinPath(settings.buildPath, settings.platform, idString);
+		settings = {
+			...settings,
+			buildPath: this.diskIO.joinPath(settings.buildPath, settings.platform, idString)
+		};
+
+		// A new build into the same directory may overwrite the previous artifacts before it
+		// completes, so it is no longer safe to offer those artifacts for re-running.
+		if (!settings.noBuild && this.lastSuccessfulBuild?.resolvedBuildPath === settings.buildPath) {
+			this.lastSuccessfulBuild = undefined;
+		}
 
 		if (!(await this.diskIO.readDir(settings.buildPath)).ok) {
 			
@@ -112,9 +131,51 @@ export class CompileControllerImpl {
 		const job = new IgorJob(id, settings, proc, this.project, startTime);
 		
 		this.jobs.push(job);
-		job.events.once('stop', () => this.removeJob(job));
+		job.events.once('stop', ({ stopType }) => {
+			this.removeJob(job);
+
+			if (!settings.noBuild && settings.task === 'Run' && stopType === 'Finished') {
+				this.lastSuccessfulBuild = {
+					settings: reusableSettings,
+					id,
+					resolvedBuildPath: settings.buildPath
+				};
+			}
+		});
 
 		return Ok(job);
+	}
+
+	/**
+	 * Launch the last successfully built Run job without compiling it again.
+	 *
+	 * @returns {Promise<Result<IgorJob>>}
+	 */
+	async rerunLastBuild() {
+		if (this.lastSuccessfulBuild === undefined) {
+			return Err(new SolvableError(
+				'There is no successful project build available to re-run.',
+				'Run the project successfully once, then use Re-Run Last Build.'
+			));
+		}
+
+		const { settings, id } = this.lastSuccessfulBuild;
+
+		if (settings.runtime.version.supportsNoBuild?.() === false) {
+			return Err(new SolvableError(
+				`Runtime ${settings.runtime.version} does not support re-running a build.`,
+				'Build the project with a GameMaker 2024.11 or newer runtime.'
+			));
+		}
+
+		return this.start({ ...settings, noBuild: true }, id);
+	}
+
+	/**
+	 * Forget the previously built project, for example after its build directory is cleaned.
+	 */
+	forgetLastBuild() {
+		this.lastSuccessfulBuild = undefined;
 	}
 
 	/**
@@ -169,6 +230,10 @@ export class CompileControllerImpl {
 				`/df=${settings.device.filePath}`,
 				`/device=${settings.device.name}`
 			);
+		}
+
+		if (settings.noBuild) {
+			flags.push('/nb');
 		}
 
 		/** @type {string} */

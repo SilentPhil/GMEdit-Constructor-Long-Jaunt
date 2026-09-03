@@ -150,6 +150,7 @@ export class ConstructorPlugin {
 			showControlPanel: this.showControlPanel,
 			stopCurrentProject: this.stopCurrent,
 			runCurrentProject: this.runCurrent,
+			rerunCurrentProject: this.rerunCurrent,
 			reopenLastOutputLog: this.reopenLastOutputLog,
 			cleanCurrentProject: this.cleanCurrent,
 			packageCurrentProject: this.packageCurrent
@@ -559,24 +560,8 @@ export class ConstructorPlugin {
 			return;
 		}
 
-		/** @type {UI.OutputLogDisplay|undefined} */
-		let display = undefined;
-
-		/** @type {JobOutputLog|undefined} */
-		let outputToReuse = undefined;
-
-		/** @type {number|undefined} */
-		let jobIdToReuse = undefined;
-
-		if (projectProperties.reuseOutputTabOrDef) {
-			const idleOutput = JobOutputLog.findIdle();
-			
-			if (idleOutput !== undefined) {
-				outputToReuse = idleOutput;
-				jobIdToReuse = idleOutput.job.id;
-				display = idleOutput.display;
-			}
-		}
+		const outputToReuse = this.findReusableOutput(projectProperties);
+		const jobIdToReuse = outputToReuse?.job.id;
 
 		if (this.preferences.saveOnRun) {
 			open_files_save();
@@ -599,15 +584,40 @@ export class ConstructorPlugin {
 			return;
 		}
 
-		this.taskbarBuildIndicator.track(job.data, project);
+		this.displayJob(job.data, components, outputToReuse);
+	}
 
-		if (display === undefined) {
-			display = this.createOutputDisplay(components);
+	/**
+	 * Find an idle output log that may be replaced by a new job.
+	 *
+	 * @private
+	 * @param {ProjectProperties} projectProperties
+	 * @returns {JobOutputLog|undefined}
+	 */
+	findReusableOutput(projectProperties) {
+		if (!projectProperties.reuseOutputTabOrDef) {
+			return undefined;
 		}
 
+		return JobOutputLog.findIdle();
+	}
+
+	/**
+	 * Attach a started job to the configured output and error displays.
+	 *
+	 * @private
+	 * @param {GM.Job} job
+	 * @param {ProjectComponents} components
+	 * @param {JobOutputLog|undefined} outputToReuse
+	 */
+	displayJob(job, components, outputToReuse) {
+		this.taskbarBuildIndicator.track(job, components.project);
+
+		const display = outputToReuse?.display ?? this.createOutputDisplay(components);
 		outputToReuse?.destroy(false);
-		const errorDisplay = this.createErrorDisplay(job.data);
-		JobOutputLog.create(job.data, display, this.preferences.outputFontSize, errorDisplay);
+
+		const errorDisplay = this.createErrorDisplay(job);
+		JobOutputLog.create(job, display, this.preferences.outputFontSize, errorDisplay);
 
 		if (this.preferences.shouldFocusOutput) {
 			display.bringToForeground();
@@ -693,6 +703,24 @@ export class ConstructorPlugin {
 		}
 	}
 
+	rerunCurrent = async () => {
+		const components = this.currentProjectComponents;
+
+		if (components === undefined) {
+			return;
+		}
+
+		const outputToReuse = this.findReusableOutput(components.projectProperties);
+		const job = await components.compileController.rerunLastBuild();
+
+		if (!job.ok) {
+			this.controlPanel.error('Failed to re-run last build!', job.err);
+			return;
+		}
+
+		this.displayJob(job.data, components, outputToReuse);
+	}
+
 	packageCurrent = () => {
 		if (this.currentProjectComponents !== undefined) {
 			this.executeTask('Package', this.currentProjectComponents);
@@ -760,6 +788,7 @@ export class ConstructorPlugin {
 
 		// Stop existing running jobs, as they wouldn't be too happy about their directories being cleared!
 		await components.compileController.stopAll();
+		components.compileController.forgetLastBuild();
 
 		if (Electron_FS.existsSync(buildDir)) {
 			try {

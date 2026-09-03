@@ -12,6 +12,7 @@ const DEFAULT_BINDS = {
 	stop: 'F6',
 	clean: 'Ctrl+F7',
 	reopenOutputLog: 'Ctrl+Shift+F6',
+	rerun: 'Ctrl+Shift+F5',
 	run: 'F5'
 };
 
@@ -72,6 +73,12 @@ export class HamburgerOptions {
 				exec: commands.reopenLastOutputLog
 			},
 			{
+				name: 'constructor-rerun',
+				title: 'Constructor - Re-Run Last Build',
+				bindKey: { win: DEFAULT_BINDS.rerun, mac: DEFAULT_BINDS.rerun },
+				exec: commands.rerunCurrentProject
+			},
+			{
 				name: 'constructor-run',
 				title: 'Constructor - Run',
 				bindKey: { win: DEFAULT_BINDS.run, mac: DEFAULT_BINDS.run },
@@ -126,6 +133,14 @@ export class HamburgerOptions {
 				icon: path.join(iconsPath, 'package.png'),
 				accelerator: DEFAULT_BINDS.package,
 				click: commands.packageCurrentProject,
+				enabled: false
+			},
+			{
+				id: 'constructor-project-rerun',
+				label: 'Re-Run Last Build',
+				icon: path.join(iconsPath, 'run.png'),
+				accelerator: DEFAULT_BINDS.rerun,
+				click: commands.rerunCurrentProject,
 				enabled: false
 			},
 			{

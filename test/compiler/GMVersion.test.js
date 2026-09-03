@@ -1,5 +1,5 @@
 import test from 'node:test';
-import { GMVersion } from '../../js/compiler/GMVersion.js';
+import { GMRuntimeVersion, GMVersion } from '../../js/compiler/GMVersion.js';
 import { assertErr, assertOk } from '../index.js';
 import assert from 'node:assert';
 
@@ -44,6 +44,15 @@ test.suite('GMVersion', () => {
 
 	test('comparing two stable versions with different months', () => {
 		assert(new GMVersion(2024, 2, 0, 0).compare(new GMVersion(2024, 4, 0, 0)) < 0);
+	});
+});
+
+test.suite('GMRuntimeVersion capabilities', () => {
+	test('supports re-running builds from the 2024.11 runtime onward', () => {
+		assert.equal(new GMRuntimeVersion(2024, 8, 1, 218).supportsNoBuild(), false);
+		assert.equal(new GMRuntimeVersion(2024, 11, 0, 226).supportsNoBuild(), true);
+		assert.equal(new GMRuntimeVersion(2024, 1100, 0, 726).supportsNoBuild(), true);
+		assert.equal(new GMRuntimeVersion(9, 9, 1, 1439).supportsNoBuild(), true);
 	});
 });
 

@@ -111,7 +111,94 @@ test.suite('CompileControllerImpl', () => {
 		assert.equal(reusedJobResult.data.id, 1);
 		assert.equal(spawnedProcesses.length, 3);
 	});
+
+	test('re-runs the last successful Run job from the same build directory without rebuilding', async () => {
+		globalThis.$gmedit = {
+			'ui.Preferences': {}
+		};
+
+		const { CompileControllerImpl } = await import('../../js/compiler/CompileControllerImpl.js');
+		const spawnedProcesses = [];
+
+		inject({
+			path: nodePath,
+			child_process: {
+				spawn(command, args) {
+					const process = new FakeProcess(command, args);
+					spawnedProcesses.push(process);
+					return process;
+				}
+			}
+		});
+
+		const diskIO = new MockDiskIO({});
+		const controller = new CompileControllerImpl({
+			dir: 'project',
+			path: diskIO.joinPath('project', 'project.yyp'),
+			displayName: 'project'
+		}, diskIO);
+
+		const unavailableResult = await controller.rerunLastBuild();
+		assert.equal(unavailableResult.ok, false);
+
+		const buildResult = await controller.start(createSettings(diskIO), 3);
+		assertOk(buildResult);
+		buildResult.data.process.exitCode = 0;
+		buildResult.data.process.emit('exit');
+
+		const rerunResult = await controller.rerunLastBuild();
+		assertOk(rerunResult);
+
+		assert.equal(spawnedProcesses.length, 2);
+		assert.equal(rerunResult.data.id, 3);
+		assert.ok(spawnedProcesses[1].spawnargs.includes('/nb'));
+		assert.equal(
+			findFlag(spawnedProcesses[1].spawnargs, '/cache='),
+			findFlag(spawnedProcesses[0].spawnargs, '/cache=')
+		);
+	});
+
+	test('forgets the reusable build when project build files are cleaned', async () => {
+		globalThis.$gmedit = {
+			'ui.Preferences': {}
+		};
+
+		const { CompileControllerImpl } = await import('../../js/compiler/CompileControllerImpl.js');
+
+		inject({
+			path: nodePath,
+			child_process: {
+				spawn(command, args) {
+					return new FakeProcess(command, args);
+				}
+			}
+		});
+
+		const diskIO = new MockDiskIO({});
+		const controller = new CompileControllerImpl({
+			dir: 'project',
+			path: diskIO.joinPath('project', 'project.yyp'),
+			displayName: 'project'
+		}, diskIO);
+
+		const buildResult = await controller.start(createSettings(diskIO));
+		assertOk(buildResult);
+		buildResult.data.process.exitCode = 0;
+		buildResult.data.process.emit('exit');
+
+		controller.forgetLastBuild();
+		const rerunResult = await controller.rerunLastBuild();
+		assert.equal(rerunResult.ok, false);
+	});
 });
+
+/**
+ * @param {string[]} args
+ * @param {string} prefix
+ */
+function findFlag(args, prefix) {
+	return args.find(argument => argument.startsWith(prefix));
+}
 
 /**
  * @param {DiskIO} diskIO

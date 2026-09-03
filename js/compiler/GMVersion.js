@@ -259,6 +259,20 @@ export class GMRuntimeVersion extends GMVersion {
 		return this.compare(new GMRuntimeVersion(2024, 1400, 2, 925)) >= 0;
 	}
 
+	/**
+	 * Whether this runtime's Igor supports launching a previously built project with `/nb`.
+	 * @returns {boolean}
+	 */
+	supportsNoBuild() {
+		// Red runtimes are newer than the 2024 runtime line.
+		if (this.year === 9) {
+			return true;
+		}
+
+		const month = (this.month >= 100) ? this.month / 100 : this.month;
+		return this.year > 2024 || (this.year === 2024 && month >= 11);
+	}
+
 	toString() {
 		return `runtime-${super.toString()}`;
 	}

@@ -127,6 +127,12 @@ export declare global {
 				id?: number
 			): Promise<Result<Job>>;
 
+			/** Launch the most recent successful Run job without rebuilding it. */
+			async rerunLastBuild(): Promise<Result<Job>>;
+
+			/** Forget the most recent build, for example after cleaning its files. */
+			forgetLastBuild(): void;
+
 			/**
 			 * Stop all currently running jobs.
 			 * 

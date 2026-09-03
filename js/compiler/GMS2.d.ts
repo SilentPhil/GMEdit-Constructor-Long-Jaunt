@@ -138,6 +138,11 @@ export declare global {
 			 */
 			launch?: boolean;
 
+			/**
+			 * Launch an existing build without invoking the asset compiler.
+			 */
+			noBuild?: boolean;
+
 		};
 
 		/**

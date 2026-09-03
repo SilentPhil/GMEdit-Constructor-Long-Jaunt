@@ -11,6 +11,7 @@ and can switch between build configs.
 
 ## Features
 - **Easily run, package releases, or clean projects from GMEdit!**
+  - **Re-run the last successful build without compiling it again** (GameMaker runtime 2024.11+).
   - **Execute multiple builds side-by-side** in managed separate directories (disable reusing tabs for this.)
   - **Build and Runtime error parsing** (view them nice and neat rather than scrolling the log, and view the lines they happened at!)
   - **Close a build tab to stop it** (or use the hotkey.)
@@ -52,6 +53,7 @@ for more details!
 | --------------------------------- | ------------------ |
 | View the Control Panel            | <kbd>Ctrl+\`</kbd> |
 | Run the current project           | <kbd>F5</kbd>      |
+| Re-run the last successful build  | <kbd>Ctrl+Shift+F5</kbd> |
 | Clean the current project's files | <kbd>Ctrl+F7</kbd> |
 | Stop the current compile job      | <kbd>F6</kbd>      |
 | Package the current project       | <kbd>Ctrl+F5</kbd> |

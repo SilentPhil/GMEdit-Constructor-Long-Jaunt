@@ -99,6 +99,7 @@ export declare global {
 		showControlPanel(): void;
 		stopCurrentProject(): void;
 		runCurrentProject(): void;
+		rerunCurrentProject(): void;
 		reopenLastOutputLog(): void;
 		cleanCurrentProject(): void;
 		packageCurrentProject(): void;
