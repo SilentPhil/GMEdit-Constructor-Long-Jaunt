@@ -27,6 +27,43 @@ class FakeProcess extends EventEmitter {
 }
 
 test.suite('CompileControllerImpl', () => {
+	test('passes the macOS compiler workaround while preserving the inherited environment', async () => {
+		globalThis.$gmedit = {
+			'ui.Preferences': {}
+		};
+
+		const { CompileControllerImpl } = await import('../../js/compiler/CompileControllerImpl.js');
+		const parentWorkaround = process.env.COMPlus_ZapDisable;
+		let spawnOptions;
+
+		inject({
+			path: nodePath,
+			child_process: {
+				spawn(command, args, options) {
+					spawnOptions = options;
+					return new FakeProcess(command, args);
+				}
+			}
+		});
+
+		const diskIO = new MockDiskIO({});
+		const controller = new CompileControllerImpl({
+			dir: 'project',
+			path: diskIO.joinPath('project', 'project.yyp'),
+			displayName: 'project'
+		}, diskIO);
+
+		assertOk(await controller.start(createSettings(diskIO)));
+
+		if (process.platform === 'darwin') {
+			assert.notStrictEqual(spawnOptions.env, process.env);
+			assert.deepEqual(spawnOptions.env, { ...process.env, COMPlus_ZapDisable: '1' });
+		} else {
+			assert.equal(spawnOptions.env, undefined);
+		}
+		assert.equal(process.env.COMPlus_ZapDisable, parentWorkaround);
+	});
+
 	test('emits incremental output while retaining complete stdout', async () => {
 		globalThis.$gmedit = {
 			'ui.Preferences': {}

@@ -111,6 +111,12 @@ export class CompileControllerImpl {
 			cwd: this.project.dir,
 			detached: (process.platform !== 'win32')
 		};
+
+		if (process.platform === 'darwin') {
+			// Match the IDE's workaround for Asset Compiler AccessViolationException crashes.
+			// https://github.com/YoYoGames/GameMaker-Bugs/issues/15357
+			spawn_opts.env = { ...process.env, COMPlus_ZapDisable: '1' };
+		}
 		
 		/** @type {import('node:child_process').ChildProcessWithoutNullStreams} */
 		let proc;
